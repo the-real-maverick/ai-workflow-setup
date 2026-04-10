@@ -30,51 +30,43 @@ fi
 # ---- Step 1: Find Obsidian Vault ----
 echo -e "${YELLOW}Step 1: Locating your Obsidian vault...${NC}"
 
-# Search multiple known iCloud locations for Obsidian vaults
-ICLOUD_LOCATIONS=(
-    "$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents"
-    "$HOME/Library/Mobile Documents/com~apple~CloudDocs/Obsidian"
-    "$HOME/Library/Mobile Documents/com~apple~CloudDocs"
-)
-
-VAULT_LIST=()
-for ICLOUD_BASE in "${ICLOUD_LOCATIONS[@]}"; do
-    if [ -d "$ICLOUD_BASE" ]; then
-        for dir in "$ICLOUD_BASE"/*/; do
-            if [ -d "$dir/.obsidian" ]; then
+# Accept vault path as first argument, or prompt
+if [ -n "$1" ]; then
+    VAULT_PATH="$1"
+    echo -e "Using provided vault path: $VAULT_PATH"
+else
+    # Check the most common iCloud Obsidian location first
+    KNOWN_PATH="$HOME/Library/Mobile Documents/com~apple~CloudDocs/Obsidian"
+    if [ -d "$KNOWN_PATH" ]; then
+        echo "Found Obsidian folder in iCloud Drive."
+        echo "Vaults:"
+        i=1
+        VAULT_LIST=()
+        for dir in "$KNOWN_PATH"/*/; do
+            if [ -d "$dir" ]; then
                 VAULT_LIST+=("$dir")
+                echo "  $i) $(basename "$dir")"
+                ((i++))
             fi
         done
-    fi
-done
-
-if [ ${#VAULT_LIST[@]} -gt 0 ]; then
-    echo -e "Found Obsidian vault(s):"
-    echo ""
-    i=1
-    for v in "${VAULT_LIST[@]}"; do
-        echo "  $i) $(basename "$v")  — $v"
-        ((i++))
-    done
-    echo ""
-
-    if [ ${#VAULT_LIST[@]} -eq 1 ]; then
-        VAULT_PATH="${VAULT_LIST[0]}"
-        echo -e "Found: $(basename "$VAULT_PATH")"
-        read -p "Use this vault? (y/n): " CONFIRM
-        if [[ "$CONFIRM" != "y" && "$CONFIRM" != "Y" ]]; then
-            read -p "Enter full vault path manually: " VAULT_PATH
+        if [ ${#VAULT_LIST[@]} -eq 1 ]; then
+            VAULT_PATH="${VAULT_LIST[0]}"
+            echo ""
+            read -p "Use $(basename "$VAULT_PATH")? (y/n): " CONFIRM
+            if [[ "$CONFIRM" != "y" && "$CONFIRM" != "Y" ]]; then
+                read -p "Enter full vault path: " VAULT_PATH
+            fi
+        elif [ ${#VAULT_LIST[@]} -gt 1 ]; then
+            echo ""
+            read -p "Select vault number: " VAULT_NUM
+            VAULT_PATH="${VAULT_LIST[$((VAULT_NUM-1))]}"
+        else
+            read -p "Enter full vault path: " VAULT_PATH
         fi
     else
-        read -p "Select vault number: " VAULT_NUM
-        VAULT_PATH="${VAULT_LIST[$((VAULT_NUM-1))]}"
+        echo -e "${YELLOW}Could not auto-detect. Enter your full Obsidian vault path:${NC}"
+        read -p "Vault path: " VAULT_PATH
     fi
-else
-    echo -e "${YELLOW}Could not auto-detect vaults. Please enter the full path.${NC}"
-    echo "  Hint: Try running this in another terminal to find it:"
-    echo "  find \"\$HOME/Library/Mobile Documents\" -name \".obsidian\" -maxdepth 4 2>/dev/null"
-    echo ""
-    read -p "Full vault path: " VAULT_PATH
 fi
 
 # Remove trailing slash
