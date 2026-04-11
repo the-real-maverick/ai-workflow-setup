@@ -1,0 +1,218 @@
+name: Validate Vault Files
+
+on:
+  push:
+    paths:
+      - 'CLAUDE.md'
+      - 'Context/context.md'
+      - 'nightly-pipeline.md'
+      - 'nightly-digest-prompt.md'
+  pull_request:
+    paths:
+      - 'CLAUDE.md'
+      - 'Context/context.md'
+      - 'nightly-pipeline.md'
+      - 'nightly-digest-prompt.md'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    name: Validate vault config files
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate CLAUDE.md structure
+        run: |
+          echo "=== Validating CLAUDE.md ==="
+          FILE="CLAUDE.md"
+
+          if [ ! -f "$FILE" ]; then
+            echo "::error::CLAUDE.md is missing"
+            exit 1
+          fi
+
+          # Required sections
+          REQUIRED_SECTIONS=(
+            "## Who I Am"
+            "## Vault Structure"
+            "## How I Want You to Work"
+            "## Nightly Pipeline Fallbacks"
+          )
+
+          for section in "${REQUIRED_SECTIONS[@]}"; do
+            if ! grep -q "$section" "$FILE"; then
+              echo "::error::CLAUDE.md missing required section: $section"
+              exit 1
+            fi
+            echo "  ✓ Found: $section"
+          done
+
+          # Must contain identity
+          if ! grep -qi "Jacob Althaus" "$FILE"; then
+            echo "::error::CLAUDE.md missing identity (Jacob Althaus)"
+            exit 1
+          fi
+          echo "  ✓ Identity present"
+
+          # Must reference context.md
+          if ! grep -q "context.md" "$FILE"; then
+            echo "::error::CLAUDE.md must reference context.md"
+            exit 1
+          fi
+          echo "  ✓ References context.md"
+
+          # No API keys or secrets
+          if grep -qiE '(sk-[a-zA-Z0-9]{20,}|pplx-[a-zA-Z0-9]{20,}|ghp_[a-zA-Z0-9]{20,}|Bearer [a-zA-Z0-9]{20,})' "$FILE"; then
+            echo "::error::CLAUDE.md contains what appears to be an API key or secret"
+            exit 1
+          fi
+          echo "  ✓ No secrets detected"
+
+          # Check file is valid UTF-8 and not empty
+          if [ ! -s "$FILE" ]; then
+            echo "::error::CLAUDE.md is empty"
+            exit 1
+          fi
+          echo "  ✓ File is non-empty"
+
+          echo "=== CLAUDE.md passed all checks ==="
+
+      - name: Validate context.md structure
+        run: |
+          echo "=== Validating Context/context.md ==="
+          FILE="Context/context.md"
+
+          if [ ! -f "$FILE" ]; then
+            echo "::error::Context/context.md is missing"
+            exit 1
+          fi
+
+          # Must have YAML frontmatter
+          FIRST_LINE=$(head -1 "$FILE")
+          if [ "$FIRST_LINE" != "---" ]; then
+            echo "::error::context.md must start with YAML frontmatter (---)"
+            exit 1
+          fi
+          echo "  ✓ YAML frontmatter present"
+
+          # Frontmatter must close
+          FRONTMATTER_CLOSE=$(awk 'NR>1 && /^---$/{print NR; exit}' "$FILE")
+          if [ -z "$FRONTMATTER_CLOSE" ]; then
+            echo "::error::context.md YAML frontmatter is not closed (missing second ---)"
+            exit 1
+          fi
+          echo "  ✓ Frontmatter properly closed (line $FRONTMATTER_CLOSE)"
+
+          # Must contain 'updated' field in frontmatter
+          if ! head -"$FRONTMATTER_CLOSE" "$FILE" | grep -q "updated:"; then
+            echo "::error::context.md frontmatter missing 'updated' field"
+            exit 1
+          fi
+          echo "  ✓ 'updated' field in frontmatter"
+
+          # Required sections
+          REQUIRED_SECTIONS=(
+            "## About Me"
+            "## Current Projects"
+            "## My Preferences"
+            "## AI Routing Rules"
+            "## Tools & Integrations"
+          )
+
+          for section in "${REQUIRED_SECTIONS[@]}"; do
+            if ! grep -q "$section" "$FILE"; then
+              echo "::error::context.md missing required section: $section"
+              exit 1
+            fi
+            echo "  ✓ Found: $section"
+          done
+
+          # Must contain identity
+          if ! grep -qi "Jacob Althaus" "$FILE"; then
+            echo "::error::context.md missing identity (Jacob Althaus)"
+            exit 1
+          fi
+          echo "  ✓ Identity present"
+
+          # Must contain AI routing table
+          if ! grep -q "| Task" "$FILE"; then
+            echo "::warning::context.md AI Routing Rules section may be missing the routing table"
+          else
+            echo "  ✓ Routing table present"
+          fi
+
+          # No API keys or secrets
+          if grep -qiE '(sk-[a-zA-Z0-9]{20,}|pplx-[a-zA-Z0-9]{20,}|ghp_[a-zA-Z0-9]{20,}|Bearer [a-zA-Z0-9]{20,})' "$FILE"; then
+            echo "::error::context.md contains what appears to be an API key or secret"
+            exit 1
+          fi
+          echo "  ✓ No secrets detected"
+
+          # Check no placeholder text remains
+          if grep -qiE '(PLACEHOLDER|TODO|FIXME|XXX)' "$FILE"; then
+            echo "::warning::context.md contains placeholder text (PLACEHOLDER/TODO/FIXME) — review before deploying to vault"
+          else
+            echo "  ✓ No placeholder text"
+          fi
+
+          # File size sanity check (should be >500 bytes if populated)
+          FILE_SIZE=$(wc -c < "$FILE" | tr -d ' ')
+          if [ "$FILE_SIZE" -lt 500 ]; then
+            echo "::warning::context.md is under 500 bytes — may not be fully populated"
+          else
+            echo "  ✓ File size: ${FILE_SIZE} bytes"
+          fi
+
+          echo "=== context.md passed all checks ==="
+
+      - name: Validate no broken wikilinks in pipeline docs
+        run: |
+          echo "=== Checking for common issues across all markdown files ==="
+
+          # Check for broken YAML frontmatter in any .md file with frontmatter
+          for file in $(find . -name "*.md" -not -path "./.git/*"); do
+            FIRST=$(head -1 "$file")
+            if [ "$FIRST" = "---" ]; then
+              CLOSE=$(awk 'NR>1 && /^---$/{print NR; exit}' "$file")
+              if [ -z "$CLOSE" ]; then
+                echo "::error::$file has unclosed YAML frontmatter"
+                exit 1
+              fi
+            fi
+          done
+          echo "  ✓ All YAML frontmatter properly closed"
+
+          # Check for vault path consistency
+          EXPECTED_PATH="jakealthaus"
+          for file in nightly-digest-prompt.md nightly-pipeline.md; do
+            if [ -f "$file" ] && grep -q "Library/Mobile Documents" "$file"; then
+              if ! grep -q "$EXPECTED_PATH" "$file"; then
+                echo "::warning::$file contains a vault path that may not match the expected user ($EXPECTED_PATH)"
+              else
+                echo "  ✓ $file vault path consistent"
+              fi
+            fi
+          done
+
+          # Check for accidental secret patterns in any file
+          for file in $(find . -name "*.md" -not -path "./.git/*"); do
+            if grep -qiE '(sk-[a-zA-Z0-9]{20,}|pplx-[a-zA-Z0-9]{20,}|ghp_[a-zA-Z0-9]{20,})' "$file"; then
+              echo "::error::$file contains what appears to be an API key"
+              exit 1
+            fi
+          done
+          echo "  ✓ No secrets in any markdown file"
+
+          echo "=== All cross-file checks passed ==="
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| File | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+          [ -f "CLAUDE.md" ] && echo "| CLAUDE.md | ✅ Present |" >> $GITHUB_STEP_SUMMARY || echo "| CLAUDE.md | ❌ Missing |" >> $GITHUB_STEP_SUMMARY
+          [ -f "Context/context.md" ] && echo "| Context/context.md | ✅ Present |" >> $GITHUB_STEP_SUMMARY || echo "| Context/context.md | ❌ Missing |" >> $GITHUB_STEP_SUMMARY
+          [ -f "nightly-pipeline.md" ] && echo "| nightly-pipeline.md | ✅ Present |" >> $GITHUB_STEP_SUMMARY || echo "| nightly-pipeline.md | ❌ Missing |" >> $GITHUB_STEP_SUMMARY
+          [ -f "nightly-digest-prompt.md" ] && echo "| nightly-digest-prompt.md | ✅ Present |" >> $GITHUB_STEP_SUMMARY || echo "| nightly-digest-prompt.md | ❌ Missing |" >> $GITHUB_STEP_SUMMARY

@@ -7,6 +7,14 @@ All notable changes to the AI Workflow Setup repo.
 ## 2026-04-10
 
 ### Added
+- **GitHub Actions CI** (`validate-vault-files.yml`)
+  - Runs on every push/PR that touches `CLAUDE.md`, `Context/context.md`, `nightly-pipeline.md`, or `nightly-digest-prompt.md`
+  - Validates CLAUDE.md: required sections (Who I Am, Vault Structure, How I Want You to Work, Nightly Pipeline Fallbacks), identity present, references context.md, no leaked secrets
+  - Validates context.md: YAML frontmatter with `updated` field, required sections (About Me, Current Projects, My Preferences, AI Routing Rules, Tools & Integrations), routing table present, no placeholders, no secrets, minimum file size
+  - Cross-file checks: all YAML frontmatter properly closed, vault paths consistent, no API keys in any markdown file
+  - Writes a summary table to the GitHub Actions job summary
+
+### Added
 - **Initial setup** (`c5cbedb`)
   - `setup.sh` — one-shot installer: Node.js, vault folder structure, Claude Desktop MCP config
   - `CLAUDE.md` — vault root context file for Claude Code (identity, vault structure, work preferences)
