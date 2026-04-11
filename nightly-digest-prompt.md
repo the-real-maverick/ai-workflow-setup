@@ -223,6 +223,24 @@ Python script requirements:
 
 ---
 
+## STEP 5 -- Back up digest to iCloud
+
+After the digest is written and verified, copy it to a dedicated iCloud backup folder outside the Obsidian vault.
+
+Backup path: /Users/jakealthaus/Library/Mobile Documents/com~apple~CloudDocs/AI-Digest-Backups/
+
+Use osascript:
+```
+do shell script "mkdir -p '$HOME/Library/Mobile Documents/com~apple~CloudDocs/AI-Digest-Backups' && cp 'VAULT/08 Daily/TODAY-Chats.md' '$HOME/Library/Mobile Documents/com~apple~CloudDocs/AI-Digest-Backups/TODAY-Chats.md'"
+```
+
+Replace VAULT and TODAY with actual values. This ensures the digest survives even if the Obsidian vault is corrupted, accidentally deleted, or iCloud sync breaks for the vault folder specifically.
+
+If the copy fails, note in the digest footer:
+*iCloud backup failed -- manually copy 08 Daily/TODAY-Chats.md to iCloud Drive > AI-Digest-Backups tomorrow.*
+
+---
+
 ## CONSTRAINTS
 - Vault path: /Users/jakealthaus/Library/Mobile Documents/com~apple~CloudDocs/Obsidian/Jake-Obsidian-Full-Operating-System
 - 08 Daily folder already exists. Do not create it.
