@@ -24,6 +24,7 @@ type: master-context
 ## Key Decisions Made
 <!-- Log important decisions with dates -->
 - 2026-04-10: Set up multi-AI workflow with Obsidian as central knowledge hub
+- 2026-04-10: Launched NEXUS self-learning agent — daily skill review, email + Dashboard notifications, scope includes new tools
 
 ## Active Deals
 <!-- Track deal names and stages -->
@@ -36,12 +37,18 @@ type: master-context
 - **Claude Desktop:** MCP hub with vault access + Perplexity search
 - **ChatGPT:** Data analysis, image generation, persistent memory
 - **Perplexity:** Research, citations, market intelligence
-- **Nightly Sync:** 10:30 PM — all AI conversations exported to Obsidian
+- **Nightly Sync:** 4-step pipeline starting 10:10 PM (see nightly-pipeline.md)
+- **NEXUS:** Self-learning agent — weekly discovery scans + nightly reflection (see below)
 - **GitHub:** Connected for code/automation repos
 - **Supabase:** Connected for database projects
 - **Zoom:** Connected for meeting management
 
 ## AI Routing Rules
+
+> **Note:** The full living routing document is at `_agent-routing-rules.md` in the vault root.
+> This table is a quick reference. The living document has tool capability profiles,
+> version history, and pending proposals from the NEXUS agent.
+
 | Task | Route To |
 |------|---------|
 | Market research, comps, citations | Perplexity |
@@ -50,3 +57,20 @@ type: master-context
 | Coding, automation, scripts | Claude (Code) |
 | Quick factual Q&A | Perplexity |
 | Multi-model validation | Perplexity (Model Council) |
+| GUI automation, browser tasks | Perplexity Computer |
+| Complex reasoning, multi-step analysis | Claude |
+| Vault management, file operations | Claude Desktop (MCP) |
+
+## NEXUS Skills Library
+- **Location:** `Skills/` folder in vault root
+- **Dashboard:** `Skills/_dashboard.md` (Dataview-powered review queue)
+- **Review cadence:** Daily — check pending skills each morning alongside Dashboard.md Top 3
+- **Notifications:** High-confidence discoveries surfaced in Dashboard Top 3 + email via Perplexity
+- **Scope:** All existing tools (Claude, ChatGPT, Perplexity) + new tools and services
+- **Current verified skills:** [auto-updated by nightly Step 4]
+- **Pending review:** [auto-updated by nightly Step 4]
+- **Discovery schedule:**
+  - Sundays 7:00 PM: MCP ecosystem scan (bi-weekly)
+  - Sundays 8:00 PM: Changelog discovery (weekly)
+  - Wednesdays 8:00 PM: Community intelligence (weekly)
+  - Nightly 10:35 PM: Routing reflection (Step 3.5)

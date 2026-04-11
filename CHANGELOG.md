@@ -4,7 +4,53 @@ All notable changes to the AI Workflow Setup repo.
 
 ---
 
-## 2026-04-10
+## 2026-04-10 (NEXUS Release)
+
+### Added — NEXUS Self-Learning Agent
+- **Skills/ folder structure** — Complete skill knowledge base with subfolders:
+  - `_pending-review/` — Skills awaiting human approval
+  - `_rejected/` — Rejected skills (agent reads before proposing)
+  - `claude/`, `chatgpt/`, `perplexity/`, `mcp/`, `workflows/`, `new-tools/` — Verified skills by tool
+  - `_skill-template.md` — Template with YAML frontmatter schema for new skill notes
+  - `_dashboard.md` — Dataview-powered review dashboard (pending, verified, rejected, stats)
+
+- **`_agent-routing-rules.md`** — Living routing document replacing static table in context.md
+  - Version history, full routing table with reasons and skill references
+  - Tool capability profiles (Claude, ChatGPT, Perplexity, MCP servers)
+  - Pending Proposals section where NEXUS agent writes proposed changes
+
+- **`_rejection-log.md`** — Agent reads this before proposing new skills to avoid repeating mistakes
+
+- **`_learning-changelog.md`** — Tracks discovery stats, last-scanned dates per source, and full discovery log
+
+### Changed
+- **CLAUDE.md** — Added "NEXUS Self-Learning Agent Integration" section:
+  - Reading skills (only use verified + human_approved)
+  - Writing skills (draft to _pending-review, never modify routing directly)
+  - User-taught learning workflow (skill notes instead of preference prompts)
+  - Rejection-aware proposing
+  - Skill lifecycle state machine
+  - New fallback: NEXUS skill import failures
+
+- **Context/context.md** — Added:
+  - NEXUS Skills Library section (location, review cadence, notification preferences, discovery schedule)
+  - Key decision: "Launched NEXUS self-learning agent"
+  - Updated nightly sync reference to include NEXUS steps
+  - Routing table now references `_agent-routing-rules.md` as source of truth
+  - Added GUI automation and complex reasoning routing entries
+
+- **nightly-pipeline.md** — Expanded from 4 steps to 5:
+  - Step 1 updated: now also exports NEXUS skill drafts with `type: skill-draft` tagging
+  - Step 3 updated: now routes skill drafts to `Skills/_pending-review/` and routing proposals to `_agent-routing-rules.md`
+  - Step 3.5 (NEW): NEXUS routing reflection — analyzes today's AI usage, proposes routing improvements, reads rejection log
+  - Step 4 updated: now includes NEXUS skill counts in context.md and surfaces pending reviews in Dashboard Top 3
+  - Added NEXUS Discovery Schedule table (MCP scan, changelog, community intelligence)
+  - Added Dataview plugin to setup requirements
+  - Added NEXUS-specific troubleshooting entries
+
+---
+
+## 2026-04-10 (Initial)
 
 ### Added
 - **GitHub Actions CI** (`validate-vault-files.yml`)
